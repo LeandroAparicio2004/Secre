@@ -1,0 +1,20 @@
+:root {
+  /* Paleta: grises cálidos + arcilla desaturada */
+  --paper: #f3efe7;
+  --ink: #2b2722;
+  --ink-soft: #6f675c;
+  --line: rgba(43, 39, 34, 0.16);
+  --clay: #9c6b4f;
+  --sage: #7c8471;
+  --backdrop: #e4ded3;
+
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root { margin: 0; height: 100%; background: transparent; }
+html[data-runtime="web"] body { background: var(--backdrop); }
+
+body { font-family: var(--sans); color: var(--ink); -webkit-font-smoothing: antialiased; }
