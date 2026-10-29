@@ -83,12 +83,15 @@
 .pulse { display: inline-flex; align-items: center; gap: 2px; height: 12px; }
 .pulse span {
   width: 2px; height: 12px; border-radius: 1px; background: var(--clay);
-  animation: bar 0.9s ease-in-out infinite;
+  /* La altura sigue el volumen real del micrófono (--mic-level, de 0 a 1) */
+  transform: scaleY(calc(0.18 + var(--mic-level, 0) * var(--k, 0.8)));
+  transition: transform 0.08s linear;
 }
-.pulse span:nth-child(2) { animation-delay: 0.12s; }
-.pulse span:nth-child(3) { animation-delay: 0.24s; }
-.pulse span:nth-child(4) { animation-delay: 0.36s; }
-.pulse span:nth-child(5) { animation-delay: 0.48s; }
+.pulse span:nth-child(1) { --k: 0.5; }
+.pulse span:nth-child(2) { --k: 0.75; }
+.pulse span:nth-child(3) { --k: 0.82; }
+.pulse span:nth-child(4) { --k: 0.65; }
+.pulse span:nth-child(5) { --k: 0.45; }
 @keyframes bar { 0%, 100% { transform: scaleY(0.25); } 50% { transform: scaleY(1); } }
 
 .dots { display: inline-flex; gap: 3px; }
@@ -107,5 +110,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .island, .island__reply, .pulse span, .dots span { animation: none; }
+  .island, .island__reply, .dots span { animation: none; }
 }

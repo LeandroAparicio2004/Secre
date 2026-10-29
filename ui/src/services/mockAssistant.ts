@@ -1,9 +1,11 @@
-// Respuestas simuladas. Se reemplaza por STT / LLM / TTS reales en fases posteriores.
+import type { Recording } from "./recorder";
+
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-export async function transcribe(): Promise<string> {
+export async function transcribe(recording: Recording): Promise<string> {
   await wait(500);
-  return "Reproduce Nirvana en Spotify";
+  const seconds = (recording.durationMs / 1000).toFixed(1).replace(".", ",");
+  return `Grabé ${seconds} s de audio (transcripción simulada)`;
 }
 
 export async function reply(text: string): Promise<string> {

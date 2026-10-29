@@ -13,7 +13,8 @@ export type IslandEvent =
   | { type: "LISTEN_STOP" }
   | { type: "SUBMIT"; text: string }
   | { type: "REPLY"; text: string }
-  | { type: "SPEAK_DONE" };
+  | { type: "SPEAK_DONE" }
+  | { type: "FAIL"; text: string };
 
 export const initialState: IslandState = { phase: "dormant", heard: "", reply: "" };
 
@@ -37,6 +38,8 @@ export function islandReducer(state: IslandState, event: IslandEvent): IslandSta
       return state.phase === "thinking" ? { ...state, phase: "speaking", reply: event.text } : state;
     case "SPEAK_DONE":
       return state.phase === "speaking" ? { ...state, phase: "awake" } : state;
+    case "FAIL":
+      return state.phase === "dormant" ? state : { ...state, phase: "awake", reply: event.text };
     default:
       return state;
   }

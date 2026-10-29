@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { initialState, islandReducer } from "../state/islandMachine";
 import { reply as askAssistant, speakDuration, transcribe } from "../services/mockAssistant";
+import { Recorder } from "../services/recorder";
 
 // Suspensión por inactividad: 5 min por defecto. Para probar: http://localhost:1420/?idle=10
 const IDLE_SECONDS = Number(new URLSearchParams(window.location.search).get("idle")) || 300;
@@ -12,6 +13,7 @@ export function useIsland() {
   const [state, dispatch] = useReducer(islandReducer, initialState);
   const [activity, setActivity] = useState(0);
   const runId = useRef(0);
+  const recorderRef = useRef<Recorder | null>(null);
 
   const poke = useCallback(() => setActivity((n) => n + 1), []);
 
@@ -19,6 +21,8 @@ export function useIsland() {
 
   const sleep = useCallback(() => {
     runId.current += 1; // cancela cualquier respuesta en curso
+    recorderRef.current?.cancel();
+    recorderRef.current = null;
     dispatch({ type: "SLEEP" });
   }, []);
 
@@ -35,19 +39,41 @@ export function useIsland() {
     dispatch({ type: "SPEAK_DONE" });
   }, []);
 
-  const toggleMic = useCallback(async () => {
-    poke();
-    if (state.phase === "listening") {
-      const id = ++runId.current;
-      dispatch({ type: "LISTEN_STOP" });
-      const heard = await transcribe();
-      if (id !== runId.current) return;
-      await ask(heard);
-    } else if (state.phase === "awake" || state.phase === "speaking") {
-      runId.current += 1;
-      dispatch({ type: "LISTEN_START" });
+  const finishListening = useCallback(async () => {
+    const recorder = recorderRef.current;
+    if (!recorder) return;
+    recorderRef.current = null;
+    const id = ++runId.current;
+    dispatch({ type: "LISTEN_STOP" });
+    const recording = await recorder.stop();
+    if (id !== runId.current) return;
+    if (!recording.heardSpeech) {
+      dispatch({ type: "FAIL", text: "No te escuché. Probá de nuevo, un poco más cerca del micrófono." });
+      return;
     }
-  }, [ask, poke, state.phase]);
+    const heard = await transcribe(recording);
+    if (id !== runId.current) return;
+    await ask(heard);
+  }, [ask]);
+
+  const startListening = useCallback(async () => {
+    runId.current += 1;
+    const recorder = new Recorder(() => { void finishListening(); });
+    recorderRef.current = recorder;
+    dispatch({ type: "LISTEN_START" });
+    try {
+      await recorder.start();
+    } catch {
+      recorderRef.current = null;
+      dispatch({ type: "FAIL", text: "No pude acceder al micrófono. Revisá los permisos del navegador y de Windows." });
+    }
+  }, [finishListening]);
+
+  const toggleMic = useCallback(() => {
+    poke();
+    if (state.phase === "listening") void finishListening();
+    else if (state.phase === "awake" || state.phase === "speaking") void startListening();
+  }, [finishListening, startListening, poke, state.phase]);
 
   // Vuelve a "dormant" tras IDLE_MS sin actividad (solo estando en reposo despierto).
   useEffect(() => {
